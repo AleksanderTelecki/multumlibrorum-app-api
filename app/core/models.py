@@ -9,6 +9,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 
+
 class UserManager(BaseUserManager):
     """Manager for users."""
 
@@ -26,13 +27,17 @@ class UserManager(BaseUserManager):
         """Create, save and return a new superuser."""
         if not email:
             raise ValueError('User must have an email address.')
-        superuser = self.model(email=self.normalize_email(email), **extra_fields)
+        superuser = self.model(
+            email=self.normalize_email(email),
+            **extra_fields,
+        )
         superuser.is_staff = True
         superuser.is_superuser = True
         superuser.set_password(password)
         superuser.save(using=self._db)
 
         return superuser
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     """User in the system."""
