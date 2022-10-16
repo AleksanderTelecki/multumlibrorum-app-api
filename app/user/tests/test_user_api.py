@@ -99,7 +99,7 @@ class PublicUserApiTests(TestCase):
             'email': 'test@example.com',
             'password': 'badpass',
         }
-        res = self.client.post(TOKEN_URL,payload)
+        res = self.client.post(TOKEN_URL, payload)
 
         self.assertNotIn('token', res.data)
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
@@ -145,7 +145,7 @@ class PrivateUserApiTests(TestCase):
 
     def test_post_me_not_allowed(self):
         """Test POST is not allowed for the me endpoint."""
-        res = self.client.post(ME_URL,{})
+        res = self.client.post(ME_URL, {})
 
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
