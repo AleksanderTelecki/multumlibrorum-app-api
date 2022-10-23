@@ -55,11 +55,11 @@ class Book(models.Model):
     """Book object."""
     title = models.CharField(max_length=255)
     isbn13 = models.CharField(max_length=17)
-    publicationDate = models.DateField(blank=True, null=True)
-    availableQuantity = models.IntegerField(default=0)
+    publication_date = models.DateField(blank=True, null=True)
+    available_quantity = models.IntegerField(default=0)
     price = models.DecimalField(max_digits=5, decimal_places=2)
     description = models.TextField(blank=True)
-    createAt = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title

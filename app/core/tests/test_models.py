@@ -59,8 +59,8 @@ class ModelTests(TestCase):
         book = models.Book.objects.create(
             title='Test Book',
             isbn13='978-3-16-148410-0',
-            publicationDate=datetime(2022, 5, 7),
-            availableQuantity=25,
+            publication_date=datetime(2022, 5, 7),
+            available_quantity=25,
             price=Decimal('5.50'),
             description='Sample Book description',
         )

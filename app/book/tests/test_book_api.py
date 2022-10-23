@@ -30,8 +30,8 @@ def create_book(**params):
     defaults = {
         'title': 'Sample book title',
         'isbn13': '978-3-16-148410-0',
-        'publicationDate': date(2022, 5, 7),
-        'availableQuantity': 25,
+        'publication_date': date(2022, 5, 7),
+        'available_quantity': 25,
         'price': Decimal('5.50'),
         'description': 'Sample Book description'
     }
@@ -89,8 +89,8 @@ class PublicBookAPITests(TestCase):
         payload = {
             'title': 'Sample book title',
             'isbn13': '978-3-16-148410-0',
-            'publicationDate': date(2022, 5, 7),
-            'availableQuantity': 25,
+            'publication_date': date(2022, 5, 7),
+            'available_quantity': 25,
             'price': Decimal('5.50'),
             'description': 'Sample Book description'
         }
@@ -116,8 +116,8 @@ class PrivateBookAPITests(TestCase):
         payload = {
             'title': 'Sample book title',
             'isbn13': '978-3-16-148410-0',
-            'publicationDate': date(2022, 5, 7),
-            'availableQuantity': 25,
+            'publication_date': date(2022, 5, 7),
+            'available_quantity': 25,
             'price': Decimal('5.50'),
             'description': 'Sample Book description'
         }
@@ -154,8 +154,8 @@ class PrivateBookAPITests(TestCase):
         payload = {
             'title': 'updated book title',
             'isbn13': '978-3-15-148410-0',
-            'publicationDate': date(2022, 6, 7),
-            'availableQuantity': 40,
+            'publication_date': date(2022, 6, 7),
+            'available_quantity': 40,
             'price': Decimal('5.70'),
             'description': 'SUpdated description'
         }
