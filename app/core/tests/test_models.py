@@ -1,9 +1,13 @@
 """
 Tests for models.
 """
+from datetime import datetime
+from decimal import Decimal
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+
+from core import models
 
 
 class ModelTests(TestCase):
@@ -48,3 +52,17 @@ class ModelTests(TestCase):
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+
+    def test_create_book(self):
+        """Test creating a book is successful."""
+
+        book = models.Book.objects.create(
+            title='Test Book',
+            isbn13='978-3-16-148410-0',
+            publicationDate=datetime(2022, 5, 7),
+            availableQuantity=25,
+            price=Decimal('5.50'),
+            description='Sample Book description',
+        )
+
+        self.assertEqual(str(book), book.title)
