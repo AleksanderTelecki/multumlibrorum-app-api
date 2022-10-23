@@ -2,7 +2,6 @@
 Database models.
 """
 
-from django.conf import settings
 from django.db import models # noqa
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -62,10 +61,5 @@ class Book(models.Model):
     description = models.TextField(blank=True)
     createdAt = models.DateTimeField(auto_now_add=True)
 
-
     def __str__(self):
-        return self.title 
-
-
-
-
+        return self.title

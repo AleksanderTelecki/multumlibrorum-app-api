@@ -17,7 +17,7 @@ class BookViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
 
     def get_permissions(self):
-        """Instantiates and returns the list of permissions that this view requires."""
+        """Instantiates and returns the list of permissions for view."""
         if self.action == 'list' or self.action == 'retrieve':
             permission_classes = [AllowAny]
         else:
@@ -34,6 +34,3 @@ class BookViewSet(viewsets.ModelViewSet):
             return serializers.BookSerializer
 
         return self.serializer_class
-
-
-

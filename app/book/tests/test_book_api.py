@@ -2,7 +2,7 @@
 Tests for book APIs.
 """
 
-from datetime import datetime, date
+from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -135,7 +135,6 @@ class PrivateBookAPITests(TestCase):
         """Test partial update of a book."""
         original_isbn13 = '978-3-16-148410-2'
 
-
         book = create_book(isbn13=original_isbn13)
 
         payload = {'title': 'New title'}
@@ -180,20 +179,3 @@ class PrivateBookAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Book.objects.filter(id=book.id).exists())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

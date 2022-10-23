@@ -18,6 +18,9 @@ class BookDetailSerializer(BookSerializer):
     """Serializer for book detail view."""
 
     class Meta(BookSerializer.Meta):
-        fields = BookSerializer.Meta.fields + ['isbn13', 'publicationDate', 'availableQuantity', 'description']
-
-
+        fields = BookSerializer.Meta.fields + [
+            'isbn13',
+            'publicationDate',
+            'availableQuantity',
+            'description'
+        ]
