@@ -51,6 +51,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
 
 
+class Genre(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Book(models.Model):
     """Book object."""
     title = models.CharField(max_length=255)
@@ -60,6 +68,7 @@ class Book(models.Model):
     price = models.DecimalField(max_digits=5, decimal_places=2)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    genres = models.ManyToManyField(Genre)
 
     def __str__(self):
         return self.title
