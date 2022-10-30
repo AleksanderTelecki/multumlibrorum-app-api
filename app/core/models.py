@@ -51,7 +51,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
 
 
+class Author(models.Model):
+    """Authors for book."""
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+
 class Genre(models.Model):
+    """Genres for book."""
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
 
@@ -69,6 +78,7 @@ class Book(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     genres = models.ManyToManyField(Genre)
+    authors = models.ManyToManyField(Author)
 
     def __str__(self):
         return self.title

@@ -12,7 +12,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Book, Genre
+from core.models import Book, Genre, Author
 from book.serializers import BookSerializer, BookDetailSerializer
 
 
@@ -300,3 +300,98 @@ class PrivateBookAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(book.genres.count(), 0)
+
+    def test_create_book_with_new_author(self):
+        """Test creating a book with new authors"""
+        payload = {
+            'title': 'Test title',
+            'isbn13': '978-3-15-148410-0',
+            'publication_date': date(2022, 6, 7),
+            'available_quantity': 40,
+            'price': Decimal('5.70'),
+            'description': 'Test description',
+            'authors': [
+                {'name': 'Test author 1'},
+                {'name': 'Test author 2'}
+            ]
+        }
+
+        res = self.client.post(BOOK_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        books = Book.objects.all()
+        self.assertEqual(books.count(), 1)
+        book = books[0]
+        self.assertEqual(book.authors.count(), 2)
+        for author in payload['authors']:
+            exists = book.authors.filter(name=author['name']).exists()
+            self.assertTrue(exists)
+
+    def test_create_book_with_existing_author(self):
+        author = Author.objects.create(name='Test author 1')
+        payload = {
+            'title': 'Test title',
+            'isbn13': '978-3-15-148410-0',
+            'publication_date': date(2022, 6, 7),
+            'available_quantity': 40,
+            'price': Decimal('5.70'),
+            'description': 'Test description',
+            'authors': [
+                {'name': 'Test author 1'},
+                {'name': 'Test author 2'}
+            ]
+        }
+
+        res = self.client.post(BOOK_URL, payload, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        books = Book.objects.all()
+        self.assertEqual(books.count(), 1)
+        book = books[0]
+        self.assertEqual(book.authors.count(), 2)
+        self.assertIn(author, book.authors.all())
+
+        for author in payload['authors']:
+            exists = book.authors.filter(name=author['name']).exists()
+            self.assertTrue(exists)
+
+    def test_create_author_on_update(self):
+        """Test creating an author when updating a book."""
+        book = create_book()
+
+        payload = {'authors': [{'name': 'Test author 1'}]}
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        new_author = Author.objects.get(name='Test author 1')
+        self.assertIn(new_author, book.authors.all())
+
+    def test_update_book_assign_author(self):
+        """Test assigning an existing author when updating a book."""
+        author1 = Author.objects.create(name='Test author 1')
+        book = create_book()
+        book.authors.add(author1)
+
+        author2 = Author.objects.create(name='Test author 2')
+
+        payload = {'authors': [{'name': 'Test author 2'}]}
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(author2, book.authors.all())
+        self.assertNotIn(author1, book.authors.all())
+
+    def test_clear_book_authors(self):
+        """Test clear an book authors."""
+        author = Author.objects.create(name='Test author')
+        book = create_book()
+        book.authors.add(author)
+
+        payload = {'authors': []}
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(book.authors.count(), 0)

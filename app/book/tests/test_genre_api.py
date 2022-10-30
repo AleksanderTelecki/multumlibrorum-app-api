@@ -33,7 +33,7 @@ class PublicGenresApiTests(TestCase):
 
         res = self.client.get(GENRE_URL)
 
-        genres = Genre.objects.all().order_by('-id')
+        genres = Genre.objects.all().order_by('-name')
         serializer = GenreSerializer(genres, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)

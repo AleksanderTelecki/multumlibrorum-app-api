@@ -73,3 +73,10 @@ class ModelTests(TestCase):
         genre = models.Genre.objects.create(name='Test', description='Test')
 
         self.assertEqual(str(genre), genre.name)
+
+    def test_create_author(self):
+        """Test creating a author is successful."""
+
+        author = models.Author.objects.create(name='Author Test')
+
+        self.assertEqual(str(author), author.name)
