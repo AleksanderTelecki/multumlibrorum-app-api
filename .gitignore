@@ -130,3 +130,4 @@ dmypy.json
 app/core/migrations/0002_book.py
 app/core/migrations/0003_rename_createdat_book_createat.py
 app/core/migrations/0004_auto_20221023_1405.py
+app/core/migrations/0001_initial.py
