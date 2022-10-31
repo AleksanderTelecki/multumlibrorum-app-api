@@ -6,7 +6,7 @@ from rest_framework import viewsets, mixins
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAdminUser, AllowAny
 
-from core.models import Book, Genre, Author, Language, BookShelf
+from core.models import Book, Genre, Author, Language, BookShelf, Publisher
 from book import serializers
 
 
@@ -78,3 +78,9 @@ class BookShelfViewSet(BaseBookAttrViewSet):
     """Manage bookshelves in database."""
     serializer_class = serializers.BookShelfSerializer
     queryset = BookShelf.objects.all()
+
+
+class PublisherViewSet(BaseBookAttrViewSet):
+    """Manage publishers in database."""
+    serializer_class = serializers.PublisherSerializer
+    queryset = Publisher.objects.all()

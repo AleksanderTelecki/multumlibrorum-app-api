@@ -97,3 +97,13 @@ class ModelTests(TestCase):
         )
 
         self.assertEqual(str(bookshelf), bookshelf.name)
+
+    def test_create_publisher(self):
+        """Test creating a bookshelf is successful."""
+
+        publisher = models.Publisher.objects.create(
+            name='New Publisher',
+            description='Publisher description.'
+        )
+
+        self.assertEqual(str(publisher), publisher.name)

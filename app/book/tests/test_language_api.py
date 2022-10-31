@@ -1,5 +1,5 @@
 """
-Tests for the lanuage API.
+Tests for the lanuages API.
 """
 from django.contrib.auth import get_user_model
 from django.urls import reverse

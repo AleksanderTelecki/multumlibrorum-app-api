@@ -12,7 +12,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Book, Genre, Author, Language, BookShelf
+from core.models import Book, Genre, Author, Language, BookShelf, Publisher
 from book.serializers import BookSerializer, BookDetailSerializer
 
 
@@ -599,3 +599,113 @@ class PrivateBookAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(book.bookshelves.count(), 0)
+
+    def test_create_book_with_new_publisher(self):
+        """Test creating a book with new publishers."""
+        payload = {
+            'title': 'Test title',
+            'isbn13': '978-3-15-148410-0',
+            'publication_date': date(2022, 6, 7),
+            'available_quantity': 40,
+            'price': Decimal('5.70'),
+            'description': 'Test description',
+            'publishers': [
+                {
+                    'name': 'Test publisher 1',
+                    'deescription': 'Publisher desc.'
+                },
+                {
+                    'name': 'Test publisher 2'
+                }
+            ]
+        }
+
+        res = self.client.post(BOOK_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        books = Book.objects.all()
+        self.assertEqual(books.count(), 1)
+        book = books[0]
+        self.assertEqual(book.publishers.count(), 2)
+        for publisher in payload['publishers']:
+            exists = book.publishers.filter(name=publisher['name']).exists()
+            self.assertTrue(exists)
+
+    def test_create_book_with_existing_publisher(self):
+        """Test creating a book with existing publishers."""
+        publisher = Publisher.objects.create(
+            name='Test publisher 1',
+            description='Publisher desc.'
+        )
+        payload = {
+            'title': 'Test title',
+            'isbn13': '978-3-15-148410-0',
+            'publication_date': date(2022, 6, 7),
+            'available_quantity': 40,
+            'price': Decimal('5.70'),
+            'description': 'Test description',
+            'publishers': [
+                {'name': 'Test publisher 1', 'description': 'Publisher desc.'},
+                {'name': 'Test publisher 2'}
+            ]
+        }
+
+        res = self.client.post(BOOK_URL, payload, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        books = Book.objects.all()
+        self.assertEqual(books.count(), 1)
+        book = books[0]
+        self.assertEqual(book.publishers.count(), 2)
+        self.assertIn(publisher, book.publishers.all())
+
+        for publisher in payload['publishers']:
+            exists = book.publishers.filter(name=publisher['name']).exists()
+            self.assertTrue(exists)
+
+    def test_create_publisher_on_update(self):
+        """Test creating an publisher when updating a book."""
+        book = create_book()
+
+        payload = {'publishers': [
+                {
+                    'name': 'Test publisher 1',
+                    'description': 'Publishers desc.'
+                }
+            ]
+        }
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        new_publisher = Publisher.objects.get(name='Test publisher 1')
+        self.assertIn(new_publisher, book.publishers.all())
+
+    def test_update_book_assign_publisher(self):
+        """Test assigning an existing publisher when updating a book."""
+        publisher1 = Publisher.objects.create(name='Test publisher 1')
+        book = create_book()
+        book.publishers.add(publisher1)
+
+        publisher2 = Publisher.objects.create(name='Test publisher 2')
+
+        payload = {'publishers': [{'name': 'Test publisher 2'}]}
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(publisher2, book.publishers.all())
+        self.assertNotIn(publisher1, book.publishers.all())
+
+    def test_clear_book_publisher(self):
+        """Test clear an book publishers."""
+        publisher = Publisher.objects.create(name='Test publisher')
+        book = create_book()
+        book.publishers.add(publisher)
+
+        payload = {'publishers': []}
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(book.publishers.count(), 0)
