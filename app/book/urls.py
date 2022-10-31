@@ -14,6 +14,7 @@ router = DefaultRouter()
 router.register('books', views.BookViewSet)
 router.register('genres', views.GenreViewSet)
 router.register('authors', views.AuthorViewSet)
+router.register('languages', views.LanguageViewSet)
 
 app_name = 'book'
 

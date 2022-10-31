@@ -12,8 +12,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Book, Genre, Author
-from book.serializers import BookSerializer, BookDetailSerializer
+from core.models import Book, Genre, Author, Language
+from book.serializers import BookSerializer, BookDetailSerializer, LanguageSerializer
 
 
 BOOK_URL = reverse('book:book-list')
@@ -395,3 +395,98 @@ class PrivateBookAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(book.authors.count(), 0)
+
+    def test_create_book_with_new_language(self):
+        """Test creating a book with new languages"""
+        payload = {
+            'title': 'Test title',
+            'isbn13': '978-3-15-148410-0',
+            'publication_date': date(2022, 6, 7),
+            'available_quantity': 40,
+            'price': Decimal('5.70'),
+            'description': 'Test description',
+            'languages': [
+                {'name': 'Test language 1'},
+                {'name': 'Test language 2'}
+            ]
+        }
+
+        res = self.client.post(BOOK_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        books = Book.objects.all()
+        self.assertEqual(books.count(), 1)
+        book = books[0]
+        self.assertEqual(book.languages.count(), 2)
+        for language in payload['languages']:
+            exists = book.languages.filter(name=language['name']).exists()
+            self.assertTrue(exists)
+
+    def test_create_book_with_existing_language(self):
+        language = Language.objects.create(name='Test language 1')
+        payload = {
+            'title': 'Test title',
+            'isbn13': '978-3-15-148410-0',
+            'publication_date': date(2022, 6, 7),
+            'available_quantity': 40,
+            'price': Decimal('5.70'),
+            'description': 'Test description',
+            'languages': [
+                {'name': 'Test language 1'},
+                {'name': 'Test language 2'}
+            ]
+        }
+
+        res = self.client.post(BOOK_URL, payload, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        books = Book.objects.all()
+        self.assertEqual(books.count(), 1)
+        book = books[0]
+        self.assertEqual(book.languages.count(), 2)
+        self.assertIn(language, book.languages.all())
+
+        for language in payload['languages']:
+            exists = book.languages.filter(name=language['name']).exists()
+            self.assertTrue(exists)
+
+    def test_create_language_on_update(self):
+        """Test creating an language when updating a book."""
+        book = create_book()
+
+        payload = {'languages': [{'name': 'Test language 1'}]}
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        new_language = Language.objects.get(name='Test language 1')
+        self.assertIn(new_language, book.languages.all())
+
+    def test_update_book_assign_language(self):
+        """Test assigning an existing language when updating a book."""
+        language1 = Language.objects.create(name='Test language 1')
+        book = create_book()
+        book.languages.add(language1)
+
+        language2 = Language.objects.create(name='Test language 2')
+
+        payload = {'languages': [{'name': 'Test language 2'}]}
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(language2, book.languages.all())
+        self.assertNotIn(language1, book.languages.all())
+
+    def test_clear_book_languages(self):
+        """Test clear an book languages."""
+        language = Language.objects.create(name='Test language')
+        book = create_book()
+        book.languages.add(language)
+
+        payload = {'languages': []}
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(book.languages.count(), 0)

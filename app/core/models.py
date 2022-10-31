@@ -51,6 +51,23 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
 
 
+class BookShelf(models.Model):
+    """Bookshelfs for book"""
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Language(models.Model):
+    """Languages for book."""
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+
 class Author(models.Model):
     """Authors for book."""
     name = models.CharField(max_length=255)
@@ -79,6 +96,7 @@ class Book(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     genres = models.ManyToManyField(Genre)
     authors = models.ManyToManyField(Author)
+    languages = models.ManyToManyField(Language)
 
     def __str__(self):
         return self.title

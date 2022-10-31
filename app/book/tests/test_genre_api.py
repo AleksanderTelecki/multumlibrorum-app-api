@@ -1,5 +1,5 @@
 """
-Tests for the API.
+Tests for the genres API.
 """
 from django.contrib.auth import get_user_model
 from django.urls import reverse

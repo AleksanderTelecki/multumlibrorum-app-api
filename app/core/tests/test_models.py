@@ -80,3 +80,17 @@ class ModelTests(TestCase):
         author = models.Author.objects.create(name='Author Test')
 
         self.assertEqual(str(author), author.name)
+
+    def test_create_language(self):
+        """Test creating a language is successful."""
+
+        language = models.Language.objects.create(name='English')
+
+        self.assertEqual(str(language), language.name)
+
+    def test_create_bookshelf(self):
+        """Test creating a bookshelf is successful."""
+
+        bookshelf = models.BookShelf.objects.create(name='Drakula', description='Bloody story.')
+
+        self.assertEqual(str(bookshelf), bookshelf.name)
