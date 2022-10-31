@@ -97,6 +97,7 @@ class Book(models.Model):
     genres = models.ManyToManyField(Genre)
     authors = models.ManyToManyField(Author)
     languages = models.ManyToManyField(Language)
+    bookshelves = models.ManyToManyField(BookShelf)
 
     def __str__(self):
         return self.title

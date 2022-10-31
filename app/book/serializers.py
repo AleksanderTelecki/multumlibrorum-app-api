@@ -2,7 +2,7 @@
 Serializers for book APIs
 """
 from rest_framework import serializers
-from core.models import Book, Genre, Author, Language
+from core.models import Book, Genre, Author, Language, BookShelf
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -32,11 +32,21 @@ class LanguageSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
+class BookShelfSerializer(serializers.ModelSerializer):
+    """BookShelf Serializer."""
+
+    class Meta:
+        model = BookShelf
+        fields = ['id', 'name', 'description']
+        read_only_fields = ['id']
+
+
 class BookSerializer(serializers.ModelSerializer):
     """Serializer for books."""
     genres = GenreSerializer(many=True, required=False)
     authors = AuthorSerializer(many=True, required=False)
     languages = LanguageSerializer(many=True, required=False)
+    bookshelves = BookShelfSerializer(many=True, required=False)
 
     class Meta:
         model = Book
@@ -48,6 +58,7 @@ class BookSerializer(serializers.ModelSerializer):
             'genres',
             'authors',
             'languages',
+            'bookshelves',
         ]
         read_only_fields = ['id']
 
@@ -69,17 +80,24 @@ class BookSerializer(serializers.ModelSerializer):
             language_obj, created = Language.objects.get_or_create(**language)
             book.languages.add(language_obj)
 
+    def _get_or_create_bookshelves(self, bookshelves, book):
+        """Handle getting or creating bookshelves as needed."""
+        for bkshlf in bookshelves:
+            bookshelf_obj, created = BookShelf.objects.get_or_create(**bkshlf)
+            book.bookshelves.add(bookshelf_obj)
 
     def create(self, validated_data):
         """Create a book."""
         genres = validated_data.pop('genres', [])
         authors = validated_data.pop('authors', [])
         languages = validated_data.pop('languages', [])
+        bookshelves = validated_data.pop('bookshelves', [])
 
         book = Book.objects.create(**validated_data)
         self._get_or_create_genres(genres, book)
         self._get_or_create_authors(authors, book)
         self._get_or_create_languages(languages, book)
+        self._get_or_create_bookshelves(bookshelves, book)
 
         return book
 
@@ -88,6 +106,7 @@ class BookSerializer(serializers.ModelSerializer):
         genres = validated_data.pop('genres', None)
         authors = validated_data.pop('authors', None)
         languages = validated_data.pop('languages', None)
+        bookshelves = validated_data.pop('bookshelves', None)
 
         if genres is not None:
             instance.genres.clear()
@@ -100,6 +119,10 @@ class BookSerializer(serializers.ModelSerializer):
         if languages is not None:
             instance.languages.clear()
             self._get_or_create_languages(languages, instance)
+
+        if bookshelves is not None:
+            instance.bookshelves.clear()
+            self._get_or_create_bookshelves(bookshelves, instance)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

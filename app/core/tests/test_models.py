@@ -91,6 +91,9 @@ class ModelTests(TestCase):
     def test_create_bookshelf(self):
         """Test creating a bookshelf is successful."""
 
-        bookshelf = models.BookShelf.objects.create(name='Drakula', description='Bloody story.')
+        bookshelf = models.BookShelf.objects.create(
+            name='Drakula',
+            description='Bloody story.'
+        )
 
         self.assertEqual(str(bookshelf), bookshelf.name)

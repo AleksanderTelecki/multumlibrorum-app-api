@@ -12,8 +12,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Book, Genre, Author, Language
-from book.serializers import BookSerializer, BookDetailSerializer, LanguageSerializer
+from core.models import Book, Genre, Author, Language, BookShelf
+from book.serializers import BookSerializer, BookDetailSerializer
 
 
 BOOK_URL = reverse('book:book-list')
@@ -490,3 +490,112 @@ class PrivateBookAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(book.languages.count(), 0)
+
+    def test_create_book_with_new_bookshelf(self):
+        """Test creating a book with new bookshelves"""
+        payload = {
+            'title': 'Test title',
+            'isbn13': '978-3-15-148410-0',
+            'publication_date': date(2022, 6, 7),
+            'available_quantity': 40,
+            'price': Decimal('5.70'),
+            'description': 'Test description',
+            'bookshelves': [
+                {
+                    'name': 'Test bookshelf 1',
+                    'deescription': 'bloody dracula.'
+                },
+                {
+                    'name': 'Test bookshelf 2'
+                }
+            ]
+        }
+
+        res = self.client.post(BOOK_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        books = Book.objects.all()
+        self.assertEqual(books.count(), 1)
+        book = books[0]
+        self.assertEqual(book.bookshelves.count(), 2)
+        for bookshelf in payload['bookshelves']:
+            exists = book.bookshelves.filter(name=bookshelf['name']).exists()
+            self.assertTrue(exists)
+
+    def test_create_book_with_existing_bookshelf(self):
+        bookshelf = BookShelf.objects.create(
+            name='Test bookshelf 1',
+            description='bloody dracula.'
+        )
+        payload = {
+            'title': 'Test title',
+            'isbn13': '978-3-15-148410-0',
+            'publication_date': date(2022, 6, 7),
+            'available_quantity': 40,
+            'price': Decimal('5.70'),
+            'description': 'Test description',
+            'bookshelves': [
+                {'name': 'Test bookshelf 1', 'description': 'bloody dracula.'},
+                {'name': 'Test bookshelf 2'}
+            ]
+        }
+
+        res = self.client.post(BOOK_URL, payload, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        books = Book.objects.all()
+        self.assertEqual(books.count(), 1)
+        book = books[0]
+        self.assertEqual(book.bookshelves.count(), 2)
+        self.assertIn(bookshelf, book.bookshelves.all())
+
+        for bookshelf in payload['bookshelves']:
+            exists = book.bookshelves.filter(name=bookshelf['name']).exists()
+            self.assertTrue(exists)
+
+    def test_create_bookshelf_on_update(self):
+        """Test creating an bookshelf when updating a book."""
+        book = create_book()
+
+        payload = {'bookshelves': [
+                {
+                    'name': 'Test bookshelf 1',
+                    'description': 'bloody dracula'
+                }
+            ]
+        }
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        new_bookshelf = BookShelf.objects.get(name='Test bookshelf 1')
+        self.assertIn(new_bookshelf, book.bookshelves.all())
+
+    def test_update_book_assign_bookshelf(self):
+        """Test assigning an existing bookshelf when updating a book."""
+        bookshelf1 = BookShelf.objects.create(name='Test bookshelf 1')
+        book = create_book()
+        book.bookshelves.add(bookshelf1)
+
+        bookshelf2 = BookShelf.objects.create(name='Test bookshelf 2')
+
+        payload = {'bookshelves': [{'name': 'Test bookshelf 2'}]}
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(bookshelf2, book.bookshelves.all())
+        self.assertNotIn(bookshelf1, book.bookshelves.all())
+
+    def test_clear_book_bookshelf(self):
+        """Test clear an book bookshelves."""
+        bookshelf = BookShelf.objects.create(name='Test bookshelf')
+        book = create_book()
+        book.bookshelves.add(bookshelf)
+
+        payload = {'bookshelves': []}
+        url = detail_url(book.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(book.bookshelves.count(), 0)

@@ -18,6 +18,7 @@ LANGUAGE_URL = reverse('book:language-list')
 def detail_url(language_id):
     return reverse('book:language-detail', args=[language_id])
 
+
 class PublicLanguagesApiTests(TestCase):
     """Test api languages request."""
 
