@@ -2,12 +2,18 @@
 Database models.
 """
 
-from django.db import models # noqa
+from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
     PermissionsMixin,
 )
+from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
+
+from django.dispatch import receiver
+from django.db.models.signals import post_save, post_delete
+from django.db.models import Avg
 
 
 class UserManager(BaseUserManager):
@@ -108,6 +114,59 @@ class Book(models.Model):
     languages = models.ManyToManyField(Language)
     bookshelves = models.ManyToManyField(BookShelf)
     publishers = models.ManyToManyField(Publisher)
+    rating = models.DecimalField(max_digits=2, decimal_places=1, default=0.0)
 
     def __str__(self):
         return self.title
+
+
+class Review(models.Model):
+    """Review object for book."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    comment = models.TextField(blank=True)
+    value = models.IntegerField(
+        default=1,
+        validators=[
+            MaxValueValidator(5),
+            MinValueValidator(0)
+        ]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{str(self.book)} | {str(self.user)} | {self.value}"
+
+    class Meta:
+        # user can't have more than one review to one book
+        unique_together = (("user", "book"),)
+
+
+@receiver(post_save, sender=Review)
+def review_created_handler(sender, instance, created, *args, **kwargs):
+    """Handle create review event to recalculate book rating"""
+    if created:
+        book = Book.objects.get(id=instance.book.id)
+        if Review.objects.filter(book=instance.book):
+            book.rating = Review.objects.filter(book=instance.book) \
+                .aggregate(Avg('value'))['value__avg']
+            book.save()
+        else:
+            book.rating = 0
+            book.save()
+
+
+@receiver(post_delete, sender=Review)
+def review_deleted_handler(sender, instance, *args, **kwargs):
+    """Handle create review event to recalculate book rating"""
+    book = Book.objects.get(id=instance.book.id)
+    if Review.objects.filter(book=instance.book):
+        book.rating = Review.objects.filter(book=instance.book) \
+            .aggregate(Avg('value'))['value__avg']
+        book.save()
+    else:
+        book.rating = 0
+        book.save()

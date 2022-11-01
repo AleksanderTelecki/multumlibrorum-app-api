@@ -48,7 +48,7 @@ class ModelTests(TestCase):
         user = get_user_model().objects.create_superuser(
             'test@example.com',
             'testpass123',
-            )
+        )
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
@@ -107,3 +107,116 @@ class ModelTests(TestCase):
         )
 
         self.assertEqual(str(publisher), publisher.name)
+
+    def test_create_review(self):
+        """Test creating a review is successful."""
+
+        user = get_user_model().objects.create_user(
+            'test@example.com',
+            'testpass123'
+        )
+        book = models.Book.objects.create(
+            title='Test Book',
+            isbn13='978-3-16-148410-0',
+            publication_date=datetime(2022, 5, 7),
+            available_quantity=25,
+            price=Decimal('5.50'),
+            description='Sample Book description',
+        )
+
+        review = models.Review.objects.create(
+            user=user,
+            book=book,
+            comment='Test comment',
+            value=4
+        )
+
+        review.refresh_from_db()
+
+        self.assertEqual(
+            str(review),
+            f"{str(review.book)} | {str(review.user)} | {review.value}"
+        )
+
+    def test_review_signal_create(self):
+        """Test review create signal."""
+        user = get_user_model().objects.create_user(
+            'test@example.com',
+            'testpass123'
+        )
+        user2 = get_user_model().objects.create_user(
+            'test2@example.com',
+            'testpass143'
+        )
+        book = models.Book.objects.create(
+            title='Test Book',
+            isbn13='978-3-16-148410-0',
+            publication_date=datetime(2022, 5, 7),
+            available_quantity=25,
+            price=Decimal('5.50'),
+            description='Sample Book description',
+        )
+
+        review1 = models.Review.objects.create(
+            user=user,
+            book=book,
+            comment='Test comment',
+            value=4
+        )
+
+        review2 = models.Review.objects.create(
+            user=user2,
+            book=book,
+            comment='Test comment',
+            value=3
+        )
+
+        avg = (review1.value+review2.value)/2
+
+        book.refresh_from_db()
+
+        self.assertEqual(book.rating, avg)
+
+    def test_review_signal_delete(self):
+        """Test review delete signal."""
+        user = get_user_model().objects.create_user(
+            'test@example.com',
+            'testpass123'
+        )
+        user2 = get_user_model().objects.create_user(
+            'test2@example.com',
+            'testpass143'
+        )
+        book = models.Book.objects.create(
+            title='Test Book',
+            isbn13='978-3-16-148410-0',
+            publication_date=datetime(2022, 5, 7),
+            available_quantity=25,
+            price=Decimal('5.50'),
+            description='Sample Book description',
+        )
+
+        review1 = models.Review.objects.create(
+            user=user,
+            book=book,
+            comment='Test comment',
+            value=4
+        )
+
+        review2 = models.Review.objects.create(
+            user=user2,
+            book=book,
+            comment='Test comment',
+            value=3
+        )
+
+        review2.delete()
+
+        avg = review1.value
+
+        book.refresh_from_db()
+        self.assertEqual(book.rating, avg)
+
+        review1.delete()
+        book.refresh_from_db()
+        self.assertEqual(book.rating, 0)

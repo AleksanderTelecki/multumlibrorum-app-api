@@ -17,6 +17,7 @@ router.register('authors', views.AuthorViewSet)
 router.register('languages', views.LanguageViewSet)
 router.register('bookshelves', views.BookShelfViewSet)
 router.register('publishers', views.PublisherViewSet)
+router.register('reviews', views.ReviewViewSet)
 
 app_name = 'book'
 

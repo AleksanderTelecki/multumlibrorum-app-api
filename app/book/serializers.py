@@ -2,7 +2,15 @@
 Serializers for book APIs
 """
 from rest_framework import serializers
-from core.models import Book, Genre, Author, Language, BookShelf, Publisher
+from core.models import (
+    Book,
+    Genre,
+    Author,
+    Language,
+    BookShelf,
+    Publisher,
+    Review
+)
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -165,3 +173,19 @@ class BookDetailSerializer(BookSerializer):
             'available_quantity',
             'description'
         ]
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    """Serializer for book reviews."""
+
+    class Meta:
+        model = Review
+        fields = ['id', 'comment', 'value', 'created_at']
+        read_only_fields = ['id']
+
+
+class ReviewDetailSerializer(serializers.ModelSerializer):
+    """Serializer for book reviews."""
+
+    class Meta(ReviewSerializer.Meta):
+        fields = ReviewSerializer.Meta.fields+['book']

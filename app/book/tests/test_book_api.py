@@ -12,8 +12,20 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Book, Genre, Author, Language, BookShelf, Publisher
-from book.serializers import BookSerializer, BookDetailSerializer
+from core.models import (
+    Book,
+    Genre,
+    Author,
+    Language,
+    BookShelf,
+    Publisher,
+    Review
+)
+from book.serializers import (
+    BookSerializer,
+    BookDetailSerializer,
+    ReviewDetailSerializer
+)
 
 
 BOOK_URL = reverse('book:book-list')
@@ -22,6 +34,16 @@ BOOK_URL = reverse('book:book-list')
 def detail_url(book_id):
     """Create and return a book URL."""
     return reverse('book:book-detail', args=[book_id])
+
+
+def detail_create_review_url(book_id):
+    """Create and return a book review create URL."""
+    return reverse('book:book-create-review', args=[book_id])
+
+
+def detail_reviews_url(book_id):
+    """Create and return a book reviews URL."""
+    return reverse('book:book-reviews', args=[book_id])
 
 
 def create_book(**params):
@@ -98,6 +120,51 @@ class PublicBookAPITests(TestCase):
         res = self.client.post(BOOK_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_reviews(self):
+        book = create_book()
+        book2 = create_book(title='New Book')
+
+        user1 = get_user_model().objects.create_user(
+            'test1@example.com',
+            'test2ass323',
+        )
+
+        user2 = get_user_model().objects.create_user(
+            'test2@example.com',
+            'testpass323',
+        )
+
+        Review.objects.create(
+            user=user1,
+            book=book,
+            comment='Test comment',
+            value=4
+        )
+
+        Review.objects.create(
+            user=user2,
+            book=book,
+            comment='Test comment',
+            value=4
+        )
+
+        Review.objects.create(
+            user=user2,
+            book=book2,
+            comment='Test 2 comment',
+            value=4
+        )
+
+        url = detail_reviews_url(book.id)
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        reviews = Review.objects.all().filter(book=book) \
+            .order_by('-book__title')
+        serializer = ReviewDetailSerializer(reviews, many=True)
+
+        self.assertEqual(res.data, serializer.data)
 
 
 class PrivateBookAPITests(TestCase):
@@ -709,3 +776,25 @@ class PrivateBookAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(book.publishers.count(), 0)
+
+    def test_create_review(self):
+        """Test create review for book with viewset action."""
+
+        book = create_book()
+
+        payload = {
+            'comment': 'Sample Comment.',
+            'value': 4
+        }
+        url = detail_create_review_url(book.id)
+        res = self.client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        reviews = Review.objects.all()
+        review = reviews[0]
+
+        self.assertEqual(reviews.count(), 1)
+        self.assertEqual(review.book, book)
+        self.assertEqual(review.user, self.user)
+        self.assertEqual(review.comment, payload['comment'])
+        self.assertEqual(review.value, payload['value'])
