@@ -14,6 +14,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.dispatch import receiver
 from django.db.models.signals import post_save, post_delete
 from django.db.models import Avg
+from decimal import Decimal
 
 
 class UserManager(BaseUserManager):
@@ -105,7 +106,12 @@ class Book(models.Model):
     title = models.CharField(max_length=255)
     isbn13 = models.CharField(max_length=17)
     publication_date = models.DateField(blank=True, null=True)
-    available_quantity = models.IntegerField(default=0)
+    available_quantity = models.IntegerField(
+        default=0,
+        validators=[
+            MinValueValidator(0)
+        ]
+    )
     price = models.DecimalField(max_digits=5, decimal_places=2)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -150,13 +156,9 @@ def review_created_handler(sender, instance, created, *args, **kwargs):
     """Handle create review event to recalculate book rating"""
     if created:
         book = Book.objects.get(id=instance.book.id)
-        if Review.objects.filter(book=instance.book):
-            book.rating = Review.objects.filter(book=instance.book) \
-                .aggregate(Avg('value'))['value__avg']
-            book.save()
-        else:
-            book.rating = 0
-            book.save()
+        book.rating = Review.objects.filter(book=instance.book) \
+            .aggregate(Avg('value'))['value__avg']
+        book.save()
 
 
 @receiver(post_delete, sender=Review)
@@ -170,3 +172,93 @@ def review_deleted_handler(sender, instance, *args, **kwargs):
     else:
         book.rating = 0
         book.save()
+
+
+class OrderItem(models.Model):
+    """Shopping cart for books."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1)
+
+    def __str__(self):
+        return (f"Book: {str(self.book)} | "
+                f"Quantity: {self.quantity} | {self.book.price}")
+
+    class Meta:
+        # user can't have more than one book of one type in shopping cart
+        unique_together = (("user", "book"),)
+
+
+@receiver(post_save, sender=OrderItem)
+def orderitem_created_handler(sender, instance, created, *args, **kwargs):
+    """Handle create orderitem event to recalculate book quantity"""
+    if created:
+        book = Book.objects.get(id=instance.book.id)
+        book.available_quantity = book.available_quantity-instance.quantity
+        book.full_clean()  # ADD SERIALIZER VALIDAION
+        book.save()
+
+
+@receiver(post_delete, sender=OrderItem)
+def orderitem_deleted_handler(sender, instance, *args, **kwargs):
+    """Handle create orderitem event to recalculate book quantity"""
+    book = Book.objects.get(id=instance.book.id)
+    book.available_quantity = book.available_quantity+instance.quantity
+    book.full_clean()  # ADD SERIALIZER VALIDAION
+    book.save()
+
+
+class LikedItem(models.Model):
+    """Liked cart for books."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Book: {str(self.book)} | {self.book.price}"
+
+    class Meta:
+        # user can't have more than one book of one type in liked cart
+        unique_together = (("user", "book"),)
+
+
+class OwnedBook(models.Model):
+    """User owned books."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Book: {str(self.book)}"
+
+    class Meta:
+        # user can't have more than one book of one type in liked cart
+        unique_together = (("user", "book"),)
+
+
+class Order(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    ordered_items = models.ManyToManyField(OrderItem)
+    paid_at = models.DateTimeField(auto_now_add=False, blank=True, null=True)
+    is_paid = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_digital = models.BooleanField(default=False)
+
+    def __str__(self):
+
+        sum = Decimal('0.0')
+        for ordereditem in self.ordered_items.all():
+            sum += ordereditem.book.price * ordereditem.quantity
+
+        return f"Count: {str(self.ordered_items.count())} | Total Price: {sum}"

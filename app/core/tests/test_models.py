@@ -220,3 +220,144 @@ class ModelTests(TestCase):
         review1.delete()
         book.refresh_from_db()
         self.assertEqual(book.rating, 0)
+
+    def test_create_orderitem(self):
+        """Test creating a orderitem is successful."""
+
+        user = get_user_model().objects.create_user(
+            'test@example.com',
+            'testpass123'
+        )
+        book = models.Book.objects.create(
+            title='Test Book',
+            isbn13='978-3-16-148410-0',
+            publication_date=datetime(2022, 5, 7),
+            available_quantity=25,
+            price=Decimal('5.50'),
+            description='Sample Book description',
+        )
+
+        orderitem = models.OrderItem.objects.create(
+            user=user,
+            book=book,
+            quantity=2
+        )
+
+        orderitem.refresh_from_db()
+
+        self.assertEqual(
+            str(orderitem),
+            (f"Book: {str(orderitem.book)} | "
+                f"Quantity: {orderitem.quantity} | {orderitem.book.price}")
+        )
+
+    def test_create_likeditem(self):
+        """Test creating a likeditem is successful."""
+
+        user = get_user_model().objects.create_user(
+            'test@example.com',
+            'testpass123'
+        )
+        book = models.Book.objects.create(
+            title='Test Book',
+            isbn13='978-3-16-148410-0',
+            publication_date=datetime(2022, 5, 7),
+            available_quantity=25,
+            price=Decimal('5.50'),
+            description='Sample Book description',
+        )
+
+        likeditem = models.LikedItem.objects.create(
+            user=user,
+            book=book
+        )
+
+        likeditem.refresh_from_db()
+
+        self.assertEqual(
+            str(likeditem),
+            f"Book: {str(likeditem.book)} | {likeditem.book.price}"
+        )
+
+    def test_create_ownedbook(self):
+        """Test creating a ownedbook is successful."""
+
+        user = get_user_model().objects.create_user(
+            'test@example.com',
+            'testpass123'
+        )
+        book = models.Book.objects.create(
+            title='Test Book',
+            isbn13='978-3-16-148410-0',
+            publication_date=datetime(2022, 5, 7),
+            available_quantity=25,
+            price=Decimal('5.50'),
+            description='Sample Book description',
+        )
+
+        ownedbook = models.OwnedBook.objects.create(
+            user=user,
+            book=book
+        )
+
+        ownedbook.refresh_from_db()
+
+        self.assertEqual(
+            str(ownedbook),
+            f"Book: {str(ownedbook.book)}"
+        )
+
+    def test_create_order(self):
+        """Test creating a order is successful."""
+        user = get_user_model().objects.create_user(
+            'test@example.com',
+            'testpass123'
+        )
+        book = models.Book.objects.create(
+            title='Test Book',
+            isbn13='978-3-16-148410-0',
+            publication_date=datetime(2022, 5, 7),
+            available_quantity=25,
+            price=Decimal('5.50'),
+            description='Sample Book description',
+        )
+
+        book1 = models.Book.objects.create(
+            title='Test Book 2',
+            isbn13='978-3-16-148410-1',
+            publication_date=datetime(2022, 5, 5),
+            available_quantity=22,
+            price=Decimal('5.60'),
+            description='Sample Book description 2',
+        )
+
+        orderitem = models.OrderItem.objects.create(
+            user=user,
+            book=book,
+            quantity=2
+        )
+
+        orderitem1 = models.OrderItem.objects.create(
+            user=user,
+            book=book1,
+            quantity=1
+        )
+
+        order = models.Order.objects.create(
+            user=user,
+            paid_at=None,
+            is_paid=False,
+            is_digital=True
+        )
+
+        order.ordered_items.add(orderitem)
+        order.ordered_items.add(orderitem1)
+
+        sum = Decimal('0.0')
+        for ordereditem in order.ordered_items.all():
+            sum += (ordereditem.book.price * ordereditem.quantity)
+
+        self.assertEqual(
+            str(order),
+            f"Count: {str(order.ordered_items.count())} | Total Price: {sum}"
+        )
