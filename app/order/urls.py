@@ -12,6 +12,7 @@ from order import views
 
 router = DefaultRouter()
 router.register('cart', views.CartViewSet)
+router.register('liked', views.LikedCartViewSet)
 
 app_name = 'order'
 
