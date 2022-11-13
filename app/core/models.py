@@ -135,7 +135,7 @@ class Review(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE)
     comment = models.TextField(blank=True)
     value = models.IntegerField(
-        default=1,
+        default=0,
         validators=[
             MaxValueValidator(5),
             MinValueValidator(0)
@@ -239,13 +239,50 @@ class OwnedBook(models.Model):
         return f"Book: {str(self.book)}"
 
     class Meta:
-        # user can't have more than one book of one type in liked cart
+        # user can't have more than one book of one type in owned books
         unique_together = (("user", "book"),)
+
+
+class ShippingType(models.Model):
+    name = models.CharField(max_length=200)
+    shipping_days = models.IntegerField(default=1)
+    shipping_price = models.DecimalField(max_digits=5, decimal_places=2)
+
+
+class Shipping(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    address = models.CharField(max_length=200)
+    city = models.CharField(max_length=200)
+    postal_code = models.CharField(max_length=200)
+    country = models.CharField(max_length=200)
+    shipping_type = models.ForeignKey(
+        ShippingType,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    is_delivered = models.BooleanField(default=False)
+    delivered_at = models.DateTimeField(
+        auto_now_add=False,
+        blank=True,
+        null=True
+    )
+
+    def __str__(self):
+        return f"User: {str(self.user)} | Address: {self.address}"
 
 
 class Order(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    shipping = models.ForeignKey(
+        Shipping,
         on_delete=models.SET_NULL,
         null=True
     )
